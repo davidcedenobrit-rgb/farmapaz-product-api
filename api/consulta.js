@@ -1,3 +1,5 @@
+import AdmZip from 'adm-zip';
+
 const PRDFILE_URL = 'https://portal.farmapazvenezuela.com/uploads/prdfile.zip';
 const API_KEY = 'navi-farmapaz-2026';
 
@@ -24,7 +26,11 @@ async function obtenerProductos() {
     headers: { 'User-Agent': 'NaviBot/1.0' },
   });
   if (!response.ok) throw new Error(`HTTP ${response.status} al descargar catálogo`);
-  const text = await response.text();
+  const arrayBuffer = await response.arrayBuffer();
+  const buffer = Buffer.from(arrayBuffer);
+  const zip = new AdmZip(buffer);
+  const entry = zip.getEntries()[0];
+  const text = entry.getData().toString('utf8');
   const json = JSON.parse(text);
   const productos = json.productos || {};
   cache = { data: productos, timestamp: now };
