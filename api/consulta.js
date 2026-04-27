@@ -1,4 +1,7 @@
-cd farmapaz-product-api
-git add api/consulta.js
-git commit -m "feat: usar JSON público de Ricardo en lugar del portal"
-git push
+} catch (error) {
+    console.error('[FARMAPAZ-API] Error detalle:', error.message, error.stack);
+    return res.status(502).json({
+      error: 'Error al consultar el catálogo',
+      mensaje: error.message,
+    });
+  }
