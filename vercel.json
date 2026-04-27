@@ -4,6 +4,5 @@
     "api/consulta.js": {
       "maxDuration": 30
     }
-  },
-  "regions": ["fra1"]
+  }
 }
