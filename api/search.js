@@ -24,7 +24,14 @@ async function obtenerProductos() {
 
   const arrayBuffer = await response.arrayBuffer();
   const zip = new AdmZip(Buffer.from(arrayBuffer));
-  const text = zip.getEntries()[0].getData().toString('utf8');
+
+  const entries = zip.getEntries();
+
+  if (!entries || entries.length === 0) {
+    throw new Error('El ZIP no contiene archivos.');
+  }
+
+  const text = entries[0].getData().toString('utf8');
   const json = JSON.parse(text);
 
   cache = {
@@ -43,10 +50,24 @@ function normalizar(texto) {
     .trim();
 }
 
+function limpiarConsulta(query) {
+  return normalizar(query)
+    .replace(/[¿?¡!.,;:()"]/g, ' ')
+    .replace(/\b(tienes|tienen|tendra|tendran|hay|precio|precios|cuesta|cuanto|cuanto cuesta|disponible|disponibilidad|quiero|busco|necesito|me das|me puedes dar|por favor|hola|buenos|dias|buenas|tardes|noches)\b/g, ' ')
+    .replace(/\s+/g, ' ')
+    .trim();
+}
+
 function buscar(productos, query, limit = 5) {
-  const terminos = normalizar(query)
+  const consultaLimpia = limpiarConsulta(query);
+
+  const terminos = consultaLimpia
     .split(/\s+/)
     .filter(Boolean);
+
+  if (!terminos.length) {
+    return [];
+  }
 
   const resultados = [];
 
@@ -79,13 +100,12 @@ function formatearProducto(p) {
     .filter(s => Number(s.stock || 0) > 0)
     .map(s => ({
       nombre: s.name,
-      stock: s.stock
+      stock: Number(s.stock || 0)
     }));
 
   const disponible = sucursales.length > 0;
 
   return {
-    sku: p.sku || '',
     producto: p.name || 'Producto sin nombre',
     marca: p.brands || '',
     precio: precioFinal > 0 ? Number(precioFinal.toFixed(2)) : null,
@@ -93,7 +113,7 @@ function formatearProducto(p) {
     precio_oferta: precioOferta > 0 ? Number(precioOferta.toFixed(2)) : null,
     tiene_descuento: tieneDescuento,
     disponible,
-    stock_total: p.stock_quantity || 0,
+    stock_total: Number(p.stock_quantity || 0),
     sucursales
   };
 }
@@ -112,7 +132,7 @@ function generarRespuesta(query, productos) {
       respuesta += `Marca: ${p.marca}\n`;
     }
 
-    respuesta += `Precio: ${p.precio ? `$${p.precio}` : 'Consultar'}\n`;
+    respuesta += `Precio: ${p.precio ? `$${p.precio.toFixed(2)}` : 'Consultar'}\n`;
 
     if (p.disponible) {
       const sedes = p.sucursales
@@ -145,12 +165,12 @@ export default async function handler(req, res) {
         ok: false,
         query: q,
         total: 0,
-        respuesta: 'Por favor indícame el nombre del producto que deseas consultar.',
-        resultados: []
+        respuesta: 'Por favor indícame el nombre del producto que deseas consultar.'
       });
     }
 
     const productos = await obtenerProductos();
+
     const encontrados = buscar(productos, q, limit);
     const resultados = encontrados.map(formatearProducto);
     const respuesta = generarRespuesta(q, resultados);
@@ -159,8 +179,7 @@ export default async function handler(req, res) {
       ok: true,
       query: q,
       total: resultados.length,
-      respuesta,
-      resultados
+      respuesta
     });
   } catch (error) {
     console.error('[SEARCH ERROR]', error.message);
@@ -169,9 +188,7 @@ export default async function handler(req, res) {
       ok: false,
       query: req.query.q || '',
       total: 0,
-      respuesta: 'En este momento no pude consultar el catálogo. Puedo pasarte con un asesor para verificarlo.',
-      error: error.message,
-      resultados: []
+      respuesta: 'En este momento no pude consultar el catálogo. Puedo pasarte con un asesor para verificarlo.'
     });
   }
 }
