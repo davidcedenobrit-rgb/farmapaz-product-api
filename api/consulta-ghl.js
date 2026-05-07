@@ -92,9 +92,7 @@ function formatearParaGHL(productos, query) {
   let mensaje = `✅ *${p.name}*\n`;
   if (p.brands) mensaje += `Marca: ${p.brands}\n`;
   mensaje += `💰 Precio: $${precioFinal.toFixed(2)}`;
-  if (tieneDescuento) mensaje += ` ~~$${precioRegular.toFixed(2)}~~`;
-  mensaje += `\n📦 Stock disponible: ${stockTotal} unidades`;
-  if (sucursalTop) mensaje += `\n📍 Mayor disponibilidad: ${sucursalTop}`;
+  if (tieneDescuento) mensaje += ` ~$${precioRegular.toFixed(2)}~`;
 
   // Si hay más de un resultado, mencionarlo
   if (productos.length > 1) {
