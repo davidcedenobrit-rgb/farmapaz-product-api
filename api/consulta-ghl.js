@@ -24,8 +24,33 @@ async function obtenerProductos() {
   return productos;
 }
 
+const STOPWORDS = new Set([
+  'tienen','tienes','tiene','hay','busco','busca','necesito','necesita',
+  'quiero','quiere','precio','costo','cuesta','cuanto','cuánto',
+  'disponible','disponibilidad','existencia','stock','conseguir',
+  'hola','buenas','buenos','dias','días','tardes','noches',
+  'por','favor','porfavor','para','con','sin','del','los','las',
+  'una','uno','unos','unas','ese','esa','eso','que','qué',
+  'si','sí','no','de','en','el','la','un','y','o','a','como',
+  'tiene','algún','algun','alguna','algo','me','te','le','se',
+  'tengan','teneis','teneís','venden','vende','hay','habra',
+  'donde','dónde','cuando','cuándo','como','cómo','cual','cuál'
+]);
+
+function limpiarQuery(query) {
+  return query
+    .toLowerCase()
+    .replace(/[¿?¡!.,;:()\[\]"']/g, ' ')
+    .split(/\s+/)
+    .filter(t => t.length > 1 && !STOPWORDS.has(t))
+    .join(' ')
+    .trim();
+}
+
 function buscarProductos(productos, query) {
-  const terminos = query.toLowerCase().trim().split(/\s+/);
+  const queryLimpio = limpiarQuery(query);
+  if (!queryLimpio) return [];
+  const terminos = queryLimpio.split(/\s+/);
   const resultados = [];
   for (const producto of Object.values(productos)) {
     const texto = [producto.name || '', producto.brands || '', producto.sku || ''].join(' ').toLowerCase();
